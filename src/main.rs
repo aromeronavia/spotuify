@@ -1,9 +1,24 @@
-use rspotify::{model::{AlbumId, FullAlbum, PlaylistId, FullTrack, PlaylistItem, PlayableItem}, prelude::*, Credentials, AuthCodeSpotify, OAuth, scopes};
+use rspotify::{model::{AlbumId, FullAlbum, PlaylistId, FullTrack, PlaylistItem, PlayableItem, Page}, prelude::*, Credentials, AuthCodeSpotify, OAuth, scopes};
 use tokio;
 use dotenv;
 use anyhow::Result;
 
 mod entities;
+
+static PLAYLIST_TRACKS_QUERY: &str = "items(
+    href,
+    track(
+        external_urls, 
+        name,
+        artists(
+            external_urls
+        ),
+        album(
+            name, 
+            external_urls
+        )
+    ), 
+)";
 
 #[tokio::main]
 async fn main() {
@@ -48,31 +63,27 @@ impl SpotifyClient {
     pub async fn get_playlist_tracks<'a>(&self, playlist_id: String) -> Vec<entities::Song> {
         self.use_token().await;
 
+        let playlist_id = PlaylistId::from_id_or_uri(&playlist_id).unwrap();
+        let tracks = self.fetch_playlist_tracks(playlist_id).await;
+
+        self.parse_items_to_songs(tracks)
+    }
+
+    async fn fetch_playlist_tracks<'a>(&self, playlist_id: PlaylistId<'a>) -> Page<PlaylistItem> {
         let limit: u32 = 50;
         let offset: u32 = 0;
-        let playlist_id = PlaylistId::from_id_or_uri(&playlist_id).unwrap();
 
-        let tracks = self.client.playlist_items_manual(
+        let page: Page<PlaylistItem> = self.client.playlist_items_manual(
             playlist_id, 
-            Some(
-                "items(
-                    href,
-                    track(
-                        external_urls, 
-                        name,
-                        artists(
-                            external_urls
-                        ),
-                        album(
-                            name, 
-                            external_urls
-                        )
-                    ), 
-                )"), None, Some(limit), Some(offset)).await.unwrap();
+            Some(PLAYLIST_TRACKS_QUERY), None, Some(limit), Some(offset)).await.unwrap();
 
-        let mut songs = Vec::new();
+        page
+    }
 
-        for track in tracks.items {
+    fn parse_items_to_songs(&self, page: Page<PlaylistItem>) -> Vec<entities::Song> {
+        let mut songs: Vec<entities::Song> = Vec::new();
+
+        for track in page.items {
             match track {
                 PlaylistItem { added_at: _, added_by: _, is_local: _, track } => {
                     match track {
