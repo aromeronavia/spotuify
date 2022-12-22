@@ -9,6 +9,6 @@ rust-version = "1.56"
 [dependencies]
 anyhow = "1.0.68"
 dotenv = "0.15.0"
-rspotify = "0.11.6"
+rspotify = { version = "0.11.6", features = ["cli", "dotenv"] }
 tokio = { version = "1.23.0", features = ["full"] }
 tui = "0.19.0"
