@@ -4,7 +4,7 @@ mod client;
 use crossterm::{terminal::{enable_raw_mode, EnterAlternateScreen, disable_raw_mode, LeaveAlternateScreen}, execute, event::{EnableMouseCapture, DisableMouseCapture}};
 use tokio;
 use dotenv;
-use std::{io, thread, time::Duration};
+use std::{io::{self, Stdout}, thread, time::Duration};
 use tui::{backend::CrosstermBackend, Terminal, widgets::{Block, Borders, List, ListItem}};
 
 use entities::Playlist;
@@ -16,17 +16,18 @@ async fn main() -> Result<(), io::Error> {
     let playlists: Vec<Playlist> = get_playlists().await;
 
     enable_raw_mode()?;
-    let mut stdout = io::stdout();
+    let mut stdout: Stdout = io::stdout();
     execute!(stdout, EnterAlternateScreen, EnableMouseCapture)?;
-    let backend = CrosstermBackend::new(stdout);
-    let mut terminal = Terminal::new(backend)?;
+    let backend: CrosstermBackend<Stdout> = CrosstermBackend::new(stdout);
+    let mut terminal: Terminal<CrosstermBackend<Stdout>> = Terminal::new(backend)?;
 
     terminal.draw(|f| {
         let size = f.size();
-        let list_items = playlists.iter().map(|playlist| 
+        let list_items: Vec<ListItem> = playlists.iter().map(|playlist: &Playlist| 
             ListItem::new(playlist.name.as_str())
         ).collect::<Vec<ListItem>>();
-        let list = List::new(list_items);
+        let block = Block::default().title("Playlists").borders(Borders::ALL);
+        let list: List = List::new(list_items).block(block);
 
         f.render_widget(list, size);
     })?;
