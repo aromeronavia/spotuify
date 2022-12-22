@@ -5,7 +5,7 @@ use crossterm::{terminal::{enable_raw_mode, EnterAlternateScreen, disable_raw_mo
 use tokio;
 use dotenv;
 use std::{io, thread, time::Duration};
-use tui::{backend::CrosstermBackend, Terminal, widgets::{Block, Borders}};
+use tui::{backend::CrosstermBackend, Terminal, widgets::{Block, Borders, List, ListItem}};
 
 use entities::Playlist;
 use client::SpotifyClient;
@@ -23,10 +23,12 @@ async fn main() -> Result<(), io::Error> {
 
     terminal.draw(|f| {
         let size = f.size();
-        let block = Block::default()
-            .title("Block")
-            .borders(Borders::ALL);
-        f.render_widget(block, size);
+        let list_items = playlists.iter().map(|playlist| 
+            ListItem::new(playlist.name.as_str())
+        ).collect::<Vec<ListItem>>();
+        let list = List::new(list_items);
+
+        f.render_widget(list, size);
     })?;
 
     thread::sleep(Duration::from_millis(5000));
@@ -48,7 +50,5 @@ async fn get_playlists() -> Vec<entities::Playlist> {
     spotify_client.authenticate().await;
 
     let playlists: Vec<entities::Playlist> = spotify_client.get_my_playlists().await;
-    // let tracks: Vec<entities::Song> = spotify_client.get_playlist_tracks(playlists[10].id.clone()).await;
-    // println!("Tracks: {:?}", tracks);
     playlists
 }
