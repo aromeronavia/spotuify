@@ -5,7 +5,7 @@ use crossterm::{terminal::{enable_raw_mode, EnterAlternateScreen, disable_raw_mo
 use tokio::{self, time::Instant};
 use dotenv;
 use std::{io::{self, Stdout}, time::Duration};
-use tui::{backend::CrosstermBackend, Terminal, widgets::{Block, Borders, List, ListItem, ListState}, style::{Style, Modifier}};
+use tui::{backend::CrosstermBackend, Terminal, widgets::{Block, Borders, List, ListItem, ListState}, style::{Style, Modifier}, layout::{Direction, Constraint, Layout}, Frame};
 
 use entities::Playlist;
 use client::SpotifyClient;
@@ -27,12 +27,43 @@ impl App {
             current_playlist: None,
         }
     }
+
+    pub fn next(&mut self) {
+        let i = match self.playlists_ui_state.selected() {
+            Some(i) => {
+                if i >= self.playlists.len() - 1 {
+                    0
+                } else {
+                    i + 1
+                }
+            }
+            None => 0,
+        };
+        self.playlists_ui_state.select(Some(i));
+    }
+
+    pub fn previous(&mut self) {
+        let i = match self.playlists_ui_state.selected() {
+            Some(i) => {
+                if i == 0 {
+                    self.playlists.len() - 1
+                } else {
+                    i - 1
+                }
+            }
+            None => 0,
+        };
+        self.playlists_ui_state.select(Some(i));
+    }
 }
 
 #[tokio::main]
 async fn main() -> Result<(), io::Error> {
     dotenv::dotenv().ok();
-    let playlists: Vec<Playlist> = get_playlists().await;
+    let spotify_client = SpotifyClient::new();
+    spotify_client.authenticate().await;
+
+    let playlists: Vec<Playlist> = get_playlists(&spotify_client).await;
 
     enable_raw_mode()?;
     let mut stdout: Stdout = io::stdout();
@@ -45,20 +76,42 @@ async fn main() -> Result<(), io::Error> {
     let mut app = App::new(playlists);
 
     loop {
-        terminal.draw(|f| {
-            let size = f.size();
+        terminal.draw(|f: &mut Frame<CrosstermBackend<Stdout>>| {
+            let chunks = Layout::default()
+                .direction(Direction::Horizontal)
+                .margin(2)
+                .constraints([Constraint::Percentage(25), Constraint::Percentage(75)].as_ref())
+                .split(f.size());
+
             let list_items: Vec<ListItem> = app.playlists.iter().map(
                 |playlist: &Playlist| ListItem::new(playlist.name.as_str()
             )).collect::<Vec<ListItem>>();
 
             let block = Block::default().title("Playlists").borders(Borders::ALL);
-            let list: List = List::new(list_items)
+            let playlists_ui: List = List::new(list_items)
                 .block(block)
                 .highlight_style(Style::default().add_modifier(Modifier::BOLD))
                 .highlight_symbol(">>");
 
-            f.render_stateful_widget(list, size, &mut app.playlists_ui_state);
+            f.render_stateful_widget(playlists_ui, chunks[0], &mut app.playlists_ui_state);
+
+            // if app.current_playlist.is_some() {
+            //     let current_playlist = app.current_playlist.as_ref().unwrap();
+            //     let songs = get_songs(&spotify_client, current_playlist.id.clone());
+
+            //     let list_items: Vec<ListItem> = songs.iter().map(
+            //         |song: &entities::Song| ListItem::new(song.name.as_str()
+            //     )).collect::<Vec<ListItem>>();
+            //     let songs_block = Block::default().title("Songs").borders(Borders::ALL);
+            //     let songs_ui: List = List::new(list_items)
+            //         .block(songs_block)
+            //         .highlight_style(Style::default().add_modifier(Modifier::BOLD))
+            //         .highlight_symbol(">>");
+
+            //     f.render_widget(songs_ui, chunks[1]);
+            // }
         })?;
+
 
         let tick_rate = Duration::from_millis(50);
         let timeout = tick_rate
@@ -73,6 +126,12 @@ async fn main() -> Result<(), io::Error> {
                     }
                     KeyCode::Char('c') if key.modifiers.contains(event::KeyModifiers::CONTROL) => {
                         break;
+                    }
+                    KeyCode::Char('j') => app.next(),
+                    KeyCode::Char('k') => app.previous(),
+                    KeyCode::Enter => {
+                        let selected_playlist = app.playlists.get(app.playlists_ui_state.selected().unwrap()).unwrap();
+                        app.current_playlist = Some(selected_playlist.clone());
                     }
                     _ => {}
                 }
@@ -96,10 +155,12 @@ async fn main() -> Result<(), io::Error> {
     Ok(())
 }
 
-async fn get_playlists() -> Vec<entities::Playlist> {
-    let spotify_client = SpotifyClient::new();
-    spotify_client.authenticate().await;
-
+async fn get_playlists(spotify_client: &SpotifyClient) -> Vec<Playlist> {
     let playlists: Vec<entities::Playlist> = spotify_client.get_my_playlists().await;
     playlists
+}
+
+async fn get_songs(spotify_client: &SpotifyClient, playlist_id: String) -> Vec<entities::Song> {
+    let songs: Vec<entities::Song> = spotify_client.get_playlist_tracks(playlist_id).await;
+    songs
 }

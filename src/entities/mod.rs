@@ -48,7 +48,7 @@ impl Album {
     }
   }
 }
-
+#[derive(Clone, PartialEq, Eq, Default)]
 pub struct Playlist {
   pub id: String,
   pub name: String,
