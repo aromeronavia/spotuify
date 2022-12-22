@@ -61,8 +61,6 @@ impl SpotifyClient {
     }
 
     pub async fn get_playlist_tracks<'a>(&self, playlist_id: String) -> Vec<entities::Song> {
-        self.use_token().await;
-
         let playlist_id = PlaylistId::from_id_or_uri(&playlist_id).unwrap();
         let tracks = self.fetch_playlist_tracks(playlist_id).await;
 
@@ -80,33 +78,7 @@ impl SpotifyClient {
         page
     }
 
-    fn parse_items_to_songs(&self, page: Page<PlaylistItem>) -> Vec<entities::Song> {
-        let mut songs: Vec<entities::Song> = Vec::new();
-
-        for track in page.items {
-            match track {
-                PlaylistItem { added_at: _, added_by: _, is_local: _, track } => {
-                    match track {
-                        Some(PlayableItem::Track(full_track)) => {
-                            let song = entities::Song::new(
-                                &full_track.artists.iter().map(|artist| artist.name.clone()).collect::<Vec<String>>().join(", "),
-                                &full_track.name,
-                                full_track.duration.as_secs(),
-                            );
-                            songs.push(song);
-                        },
-                        _ => {}
-                    }
-                }
-            }
-        };
-
-        songs
-    }
-
     pub async fn get_my_playlists(&self) -> Vec<entities::Playlist> {
-        self.use_token().await;
-
         let limit: u32 = 50;
         let offset: u32 = 0;
         let playlists = self.client.current_user_playlists_manual(Some(limit), Some(offset)).await.unwrap();
@@ -135,6 +107,30 @@ impl SpotifyClient {
                 self.parse_spotify_songs(album.clone())
             )
         )
+    }
+
+    fn parse_items_to_songs(&self, page: Page<PlaylistItem>) -> Vec<entities::Song> {
+        let mut songs: Vec<entities::Song> = Vec::new();
+
+        for track in page.items {
+            match track {
+                PlaylistItem { added_at: _, added_by: _, is_local: _, track } => {
+                    match track {
+                        Some(PlayableItem::Track(full_track)) => {
+                            let song = entities::Song::new(
+                                &full_track.artists.iter().map(|artist| artist.name.clone()).collect::<Vec<String>>().join(", "),
+                                &full_track.name,
+                                full_track.duration.as_secs(),
+                            );
+                            songs.push(song);
+                        },
+                        _ => {}
+                    }
+                }
+            }
+        };
+
+        songs
     }
 
     fn parse_spotify_songs(&self, album: FullAlbum) -> Vec<entities::Song> {
