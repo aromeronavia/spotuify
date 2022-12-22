@@ -1,4 +1,4 @@
-use rspotify::{model::{AlbumId, FullAlbum}, prelude::*, ClientCredsSpotify, Credentials, AuthCodeSpotify, OAuth, scopes};
+use rspotify::{model::{AlbumId, FullAlbum, PlaylistId, FullTrack, PlaylistItem, PlayableItem}, prelude::*, Credentials, AuthCodeSpotify, OAuth, scopes};
 use tokio;
 use dotenv;
 use anyhow::Result;
@@ -12,15 +12,12 @@ async fn main() {
 }
 
 async fn get_album() {
-    let album_uri = "spotify:album:0sNOF9WDwhWunNAHPD3Baj";
-
     let spotify_client = SpotifyClient::new();
     spotify_client.authenticate().await;
 
-    let album = spotify_client.get_album(album_uri).await.unwrap();
-
-    println!("Response: {:?}", album.songs);
-    println!("Get my playlists: {:?}", spotify_client.get_my_playlists().await)
+    let playlists = spotify_client.get_my_playlists().await;
+    let tracks = spotify_client.get_playlist_tracks(playlists[10].id.clone()).await;
+    println!("Tracks: {:?}", tracks);
 }
 
 pub struct SpotifyClient {
@@ -44,12 +41,76 @@ impl SpotifyClient {
             .expect("Couldn't authenticate user")
     }
 
-    pub async fn get_my_playlists(&self) {
+    pub async fn use_token(&self) {
         self.client.token.lock().await.unwrap();
+    }
+
+    pub async fn get_playlist_tracks<'a>(&self, playlist_id: String) -> Vec<entities::Song> {
+        self.use_token().await;
+
+        let limit: u32 = 50;
+        let offset: u32 = 0;
+        let playlist_id = PlaylistId::from_id_or_uri(&playlist_id).unwrap();
+
+        let tracks = self.client.playlist_items_manual(
+            playlist_id, 
+            Some(
+                "items(
+                    href,
+                    track(
+                        external_urls, 
+                        name,
+                        artists(
+                            external_urls
+                        ),
+                        album(
+                            name, 
+                            external_urls
+                        )
+                    ), 
+                )"), None, Some(limit), Some(offset)).await.unwrap();
+
+        let mut songs = Vec::new();
+
+        for track in tracks.items {
+            match track {
+                PlaylistItem { added_at: _, added_by: _, is_local: _, track } => {
+                    match track {
+                        Some(PlayableItem::Track(full_track)) => {
+                            let song = entities::Song::new(
+                                &full_track.artists.iter().map(|artist| artist.name.clone()).collect::<Vec<String>>().join(", "),
+                                &full_track.name,
+                                full_track.duration.as_secs(),
+                            );
+                            songs.push(song);
+                        },
+                        _ => {}
+                    }
+                }
+            }
+        };
+
+        songs
+    }
+
+    pub async fn get_my_playlists(&self) -> Vec<entities::Playlist> {
+        self.use_token().await;
+
         let limit: u32 = 50;
         let offset: u32 = 0;
         let playlists = self.client.current_user_playlists_manual(Some(limit), Some(offset)).await.unwrap();
-        println!("Playlists: {}", playlists.items.iter().map(|playlist| playlist.name.clone()).collect::<Vec<String>>().join(", "));
+
+        let mut parsed_playlists = Vec::new();
+        for playlist in playlists.clone().items {
+            parsed_playlists.push(
+                entities::Playlist::new(
+                    &playlist.id.to_string(),
+                    &playlist.name,
+                )
+            );
+        }
+
+        parsed_playlists
     }
 
     pub async fn get_album(&self, album_id: &str) -> Result<entities::Album> {
@@ -73,7 +134,6 @@ impl SpotifyClient {
                 entities::Song::new(
                     &track.artists.iter().map(|artist| artist.name.clone()).collect::<Vec<String>>().join(", "),
                     &track.name,
-                    &album.name,
                     track.duration.as_secs(),
                 )
             );

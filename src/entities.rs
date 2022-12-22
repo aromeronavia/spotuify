@@ -3,16 +3,14 @@ use std::fmt::{Formatter, Debug};
 pub struct Song {
   pub artist: String,
   pub title: String,
-  pub album: String,
   pub duration: u64,
 }
 
 impl Song {
-  pub fn new(artist: &str, title: &str, album: &str, duration: u64) -> Song {
+  pub fn new(artist: &str, title: &str, duration: u64) -> Song {
     Song {
       artist: artist.to_string(),
       title: title.to_string(),
-      album: album.to_string(),
       duration: duration,
     }
   }
@@ -23,23 +21,8 @@ impl Debug for Song {
     f.debug_struct("Song")
       .field("artist", &self.artist)
       .field("title", &self.title)
-      .field("album", &self.album)
       .field("duration", &self.duration)
       .finish()
-  }
-}
-
-pub struct Artist {
-  pub name: String,
-  pub songs: Vec<Song>,
-}
-
-impl Artist {
-  pub fn new(name: &str) -> Artist {
-    Artist {
-      name: name.to_string(),
-      songs: Vec::new(),
-    }
   }
 }
 
@@ -67,15 +50,24 @@ impl Album {
 }
 
 pub struct Playlist {
+  pub id: String,
   pub name: String,
-  pub songs: Vec<Song>,
 }
 
 impl Playlist {
-  pub fn new(name: &str) -> Playlist {
+  pub fn new(id: &str, name: &str) -> Playlist {
     Playlist {
+      id: id.to_string(),
       name: name.to_string(),
-      songs: Vec::new(),
     }
+  }
+}
+
+impl Debug for Playlist {
+  fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+    f.debug_struct("Playlist")
+      .field("id", &self.id)
+      .field("name", &self.name)
+      .finish()
   }
 }
