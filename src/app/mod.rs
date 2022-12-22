@@ -9,7 +9,7 @@ pub struct App {
 }
 
 impl App {
-  fn new(playlists: Vec<Playlist>) -> Self {
+  pub fn new(playlists: Vec<Playlist>) -> Self {
       let mut playlists_ui_state = ListState::default();
       playlists_ui_state.select(Some(0));
 
