@@ -1,7 +1,11 @@
-struct App {
-  playlists: Vec<Playlist>,
-  playlists_ui_state: ListState,
-  current_playlist: Option<Playlist>,
+use tui::widgets::ListState;
+
+use crate::entities::Playlist;
+
+pub struct App {
+  pub playlists: Vec<Playlist>,
+  pub playlists_ui_state: ListState,
+  pub current_playlist: Option<Playlist>,
 }
 
 impl App {
