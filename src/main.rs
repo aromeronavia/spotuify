@@ -1,35 +1,32 @@
-mod entities;
-mod client;
 mod app;
+mod client;
+mod entities;
+mod inputs;
 mod ui;
 
-use std::{io, rc::Rc, cell::RefCell};
-
-use dotenv;
-
-use entities::Playlist;
-use client::SpotifyClient;
+use anyhow::Result;
 use app::App;
+use client::SpotifyClient;
+use dotenv;
+use entities::Playlist;
+use std::sync::Arc;
 use ui::start_ui;
 
 #[tokio::main]
-async fn main() -> Result<(), io::Error> {
+async fn main() -> Result<()> {
     dotenv::dotenv().ok();
     let spotify_client = SpotifyClient::new();
     spotify_client.authenticate().await;
 
     let playlists: Vec<Playlist> = get_playlists(&spotify_client).await;
 
-    let mut app = Rc::new(RefCell::new(App::new(playlists)));
-    start_ui(app)
+    let app = Arc::new(tokio::sync::Mutex::new(App::new(playlists)));
+    start_ui(&app).await?;
+
+    Ok(())
 }
 
 async fn get_playlists(spotify_client: &SpotifyClient) -> Vec<Playlist> {
     let playlists: Vec<entities::Playlist> = spotify_client.get_my_playlists().await;
     playlists
-}
-
-async fn get_songs(spotify_client: &SpotifyClient, playlist_id: String) -> Vec<entities::Song> {
-    let songs: Vec<entities::Song> = spotify_client.get_playlist_tracks(playlist_id).await;
-    songs
 }
