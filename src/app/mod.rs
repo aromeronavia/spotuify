@@ -65,4 +65,6 @@ impl App {
         };
         self.playlists_ui_state.select(Some(i));
     }
+
+    pub async fn update_on_tick(&mut self) {}
 }

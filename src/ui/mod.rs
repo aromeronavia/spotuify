@@ -49,7 +49,7 @@ pub async fn start_ui(app: &Arc<tokio::sync::Mutex<App>>) -> Result<()> {
                 _ => app.do_action(key).await,
             },
             Event::Tick => {
-                app.do_action(Key::Tick).await;
+                app.update_on_tick().await;
             }
         }
     }
