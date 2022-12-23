@@ -1,17 +1,8 @@
-use std::{
-    borrow::Borrow,
-    cell::RefCell,
-    io::{self, Stdout},
-    rc::Rc,
-    time::Duration,
-};
 use tui::{backend::Backend, Frame};
 use tui::{
-    backend::CrosstermBackend,
     layout::{Constraint, Direction, Layout},
     style::{Modifier, Style},
     widgets::{Block, Borders, List, ListItem},
-    Terminal,
 };
 
 use crate::{app::App, entities::Playlist};

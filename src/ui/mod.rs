@@ -21,11 +21,11 @@ use render::render;
 
 pub async fn start_ui(app: &Arc<tokio::sync::Mutex<App>>) -> Result<()> {
     enable_raw_mode()?;
-    let mut stdout: Stdout = io::stdout();
+    let mut stdout = io::stdout();
     execute!(stdout, EnterAlternateScreen, EnableMouseCapture)?;
 
-    let backend: CrosstermBackend<Stdout> = CrosstermBackend::new(stdout);
-    let mut terminal: Terminal<CrosstermBackend<Stdout>> = Terminal::new(backend)?;
+    let backend = CrosstermBackend::new(stdout);
+    let mut terminal = Terminal::new(backend)?;
 
     let tick_rate = Duration::from_millis(200);
     let events = Events::new(tick_rate);
@@ -38,13 +38,8 @@ pub async fn start_ui(app: &Arc<tokio::sync::Mutex<App>>) -> Result<()> {
         match events.next()? {
             Event::Input(key) => match key {
                 Key::Exit => {
-                    disable_raw_mode()?;
-                    execute!(
-                        terminal.backend_mut(),
-                        LeaveAlternateScreen,
-                        DisableMouseCapture
-                    )?;
-                    terminal.show_cursor()?;
+                    exit_terminal(&mut terminal)?;
+                    std::process::exit(0);
                 }
                 _ => app.do_action(key).await,
             },
@@ -53,4 +48,16 @@ pub async fn start_ui(app: &Arc<tokio::sync::Mutex<App>>) -> Result<()> {
             }
         }
     }
+}
+
+fn exit_terminal(terminal: &mut Terminal<CrosstermBackend<Stdout>>) -> Result<()> {
+    disable_raw_mode()?;
+    execute!(
+        terminal.backend_mut(),
+        LeaveAlternateScreen,
+        DisableMouseCapture
+    )?;
+    terminal.show_cursor()?;
+
+    Ok(())
 }

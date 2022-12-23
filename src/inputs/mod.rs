@@ -7,6 +7,7 @@ use std::{
 use crossterm::event;
 use std::sync::mpsc;
 
+#[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub enum Key {
     Enter,
     Up,
@@ -24,11 +25,11 @@ impl From<event::KeyEvent> for Key {
                 ..
             } => Key::Enter,
             event::KeyEvent {
-                code: event::KeyCode::Up,
+                code: event::KeyCode::Char('k'),
                 ..
             } => Key::Up,
             event::KeyEvent {
-                code: event::KeyCode::Down,
+                code: event::KeyCode::Char('j'),
                 ..
             } => Key::Down,
             event::KeyEvent {
