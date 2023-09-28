@@ -11,7 +11,7 @@ impl Song {
         Song {
             artist: artist.to_string(),
             title: title.to_string(),
-            duration: duration,
+            duration,
         }
     }
 }
