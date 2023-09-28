@@ -1,5 +1,7 @@
 use std::fmt::{Debug, Formatter};
 
+use tui::widgets::List;
+
 pub struct Song {
     pub artist: String,
     pub title: String,
@@ -48,6 +50,7 @@ impl Album {
         }
     }
 }
+
 #[derive(Clone, PartialEq, Eq, Default)]
 pub struct Playlist {
     pub id: String,

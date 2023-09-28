@@ -5,7 +5,7 @@ use rspotify::{
     scopes, AuthCodeSpotify, Credentials, OAuth,
 };
 
-use crate::entities::{self, Song, Playlist, Album};
+use crate::entities::{Song, Playlist, Album};
 
 static PLAYLIST_TRACKS_QUERY: &str = "items(
     href,
@@ -41,10 +41,6 @@ impl SpotifyClient {
             .prompt_for_token(url.as_str())
             .await
             .expect("Couldn't authenticate user")
-    }
-
-    pub async fn use_token(&self) {
-        self.client.token.lock().await.unwrap();
     }
 
     pub async fn get_playlist_tracks<'a>(&self, playlist_id: String) -> Vec<Song> {

@@ -1,5 +1,5 @@
-use tui::{backend::Backend, Frame};
-use tui::{
+use ratatui::{backend::Backend, Frame};
+use ratatui::{
     layout::{Constraint, Direction, Layout},
     style::{Modifier, Style},
     widgets::{Block, Borders, List, ListItem},
@@ -17,17 +17,16 @@ where
         .constraints([Constraint::Percentage(25), Constraint::Percentage(75)].as_ref())
         .split(rect.size());
 
-    let list_items: Vec<ListItem> = app
-        .playlists
-        .iter()
-        .map(|playlist: &Playlist| ListItem::new(playlist.name.as_str()))
-        .collect::<Vec<ListItem>>();
-
     let block = Block::default().title("Playlists").borders(Borders::ALL);
-    let playlists_ui: List = List::new(list_items)
-        .block(block)
-        .highlight_style(Style::default().add_modifier(Modifier::BOLD))
-        .highlight_symbol(">>");
+    let playlists_ui: List = List::new(
+        app.playlists
+            .iter()
+            .map(|playlist: &Playlist| ListItem::new(playlist.name.as_str()))
+            .collect::<Vec<ListItem>>(),
+    )
+    .block(block)
+    .highlight_style(Style::default().add_modifier(Modifier::BOLD))
+    .highlight_symbol(">>");
 
     rect.render_stateful_widget(playlists_ui, chunks[0], &mut app.playlists_ui_state);
 }
