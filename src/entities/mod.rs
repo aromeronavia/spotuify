@@ -1,7 +1,5 @@
 use std::fmt::{Debug, Formatter};
 
-use tui::widgets::List;
-
 pub struct Song {
     pub artist: String,
     pub title: String,

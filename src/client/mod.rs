@@ -43,7 +43,7 @@ impl SpotifyClient {
             .expect("Couldn't authenticate user")
     }
 
-    pub async fn get_playlist_tracks<'a>(&self, playlist_id: String) -> Vec<Song> {
+    pub async fn get_playlist_songs<'a>(&self, playlist_id: String) -> Vec<Song> {
         let playlist_id = PlaylistId::from_id_or_uri(&playlist_id).unwrap();
         let tracks = self.fetch_playlist_tracks(playlist_id).await;
 

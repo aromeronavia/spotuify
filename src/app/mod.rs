@@ -1,22 +1,26 @@
 use ratatui::widgets::ListState;
 
-use crate::{entities::Playlist, inputs::Key};
+use crate::{entities::{Playlist, Song}, inputs::Key, client::SpotifyClient};
 
 pub struct App {
     pub playlists: Vec<Playlist>,
     pub playlists_ui_state: ListState,
+    pub spotify_client: SpotifyClient,
     pub current_playlist: Option<Playlist>,
+    pub playlist_songs: Option<Vec<Song>>,
 }
 
 impl App {
-    pub fn new(playlists: Vec<Playlist>) -> Self {
+    pub fn new(playlists: Vec<Playlist>, spotify_client: SpotifyClient) -> Self {
         let mut playlists_ui_state = ListState::default();
         playlists_ui_state.select(Some(0));
 
         Self {
             playlists,
             playlists_ui_state,
+            spotify_client,
             current_playlist: None,
+            playlist_songs: None,
         }
     }
 
@@ -32,7 +36,13 @@ impl App {
                     .playlists
                     .get(self.playlists_ui_state.selected().unwrap())
                     .unwrap();
+
                 self.current_playlist = Some(selected_playlist.clone());
+                self.playlist_songs = Some(
+                    self.spotify_client
+                        .get_playlist_songs(selected_playlist.id.clone())
+                        .await,
+                );
             }
             _ => {}
         }
@@ -66,5 +76,7 @@ impl App {
         self.playlists_ui_state.select(Some(i));
     }
 
-    pub async fn update_on_tick(&mut self) {}
+    pub async fn update_on_tick(&mut self) {
+
+    }
 }

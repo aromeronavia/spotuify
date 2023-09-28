@@ -21,7 +21,7 @@ async fn main() -> Result<()> {
 
     let playlists: Vec<Playlist> = spotify_client.get_my_playlists().await;
 
-    let app = Arc::new(tokio::sync::Mutex::new(App::new(playlists)));
+    let app = Arc::new(tokio::sync::Mutex::new(App::new(playlists, spotify_client)));
 
     start_ui(&app).await?;
 
